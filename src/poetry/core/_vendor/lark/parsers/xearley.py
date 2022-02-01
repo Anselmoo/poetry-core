@@ -49,16 +49,14 @@ class Parser(BaseParser):
             # be held possibly for a later parse step when we reach the point in the
             # input stream at which they complete.
             for item in set(to_scan):
-                m = match(item.expect, stream, i)
-                if m:
+                if m := match(item.expect, stream, i):
                     t = Token(item.expect.name, m.group(0), i, text_line, text_column)
                     delayed_matches[m.end()].append( (item, i, t) )
 
                     if self.complete_lex:
                         s = m.group(0)
                         for j in range(1, len(s)):
-                            m = match(item.expect, s[:-j])
-                            if m:
+                            if m := match(item.expect, s[:-j]):
                                 t = Token(item.expect.name, m.group(0), i, text_line, text_column)
                                 delayed_matches[i+m.end()].append( (item, i, t) )
 
@@ -71,8 +69,7 @@ class Parser(BaseParser):
             # the ignore. This should allow us to use ignored symbols in non-terminals to implement
             # e.g. mandatory spacing.
             for x in self.ignore:
-                m = match(x, stream, i)
-                if m:
+                if m := match(x, stream, i):
                     # Carry over any items still in the scan buffer, to past the end of the ignored items.
                     delayed_matches[m.end()].extend([(item, i, None) for item in to_scan ])
 
@@ -97,7 +94,10 @@ class Parser(BaseParser):
 
                     new_item = item.advance()
                     label = (new_item.s, new_item.start, i)
-                    new_item.node = node_cache[label] if label in node_cache else node_cache.setdefault(label, SymbolNode(*label))
+                    new_item.node = node_cache.get(
+                        label, node_cache.setdefault(label, SymbolNode(*label))
+                    )
+
                     new_item.node.add_family(new_item.s, item.rule, new_item.start, item.node, token)
                 else:
                     new_item = item

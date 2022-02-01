@@ -36,7 +36,7 @@ class Link:
 
         self.url = url
         self.comes_from = comes_from
-        self.requires_python = requires_python if requires_python else None
+        self.requires_python = requires_python or None
 
     def __str__(self) -> str:
         if self.requires_python:
@@ -138,17 +138,11 @@ class Link:
 
     @property
     def hash(self) -> Optional[str]:
-        match = self._hash_re.search(self.url)
-        if match:
-            return match.group(2)
-        return None
+        return match.group(2) if (match := self._hash_re.search(self.url)) else None
 
     @property
     def hash_name(self) -> Optional[str]:
-        match = self._hash_re.search(self.url)
-        if match:
-            return match.group(1)
-        return None
+        return match.group(1) if (match := self._hash_re.search(self.url)) else None
 
     @property
     def show_url(self) -> str:
@@ -176,7 +170,4 @@ class Link:
         Determines if this points to an actual artifact (e.g. a tarball) or if
         it points to an "abstract" thing like a path or a VCS location.
         """
-        if self.scheme in ["ssh", "git", "hg", "bzr", "sftp", "svn"]:
-            return False
-
-        return True
+        return self.scheme not in ["ssh", "git", "hg", "bzr", "sftp", "svn"]

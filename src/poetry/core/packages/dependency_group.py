@@ -31,12 +31,11 @@ class DependencyGroup:
 
         name = canonicalize_name(name)
 
-        dependencies = []
-        for dependency in self.dependencies:
-            if dependency.name == name:
-                continue
-
-            dependencies.append(dependency)
+        dependencies = [
+            dependency
+            for dependency in self.dependencies
+            if dependency.name != name
+        ]
 
         self._dependencies = dependencies
 

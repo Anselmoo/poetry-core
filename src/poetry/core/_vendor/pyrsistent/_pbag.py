@@ -113,7 +113,7 @@ class PBag(object):
         [1, 2]
         """
         for elt, count in self._counts.iteritems():
-            for i in range(count):
+            for _ in range(count):
                 yield elt
 
     def __contains__(self, elt):

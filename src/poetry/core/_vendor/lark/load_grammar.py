@@ -267,9 +267,11 @@ class SimplifyRule_Visitor(Visitor):
     def alias(self, tree):
         rule, alias_name = tree.children
         if rule.data == 'expansions':
-            aliases = []
-            for child in tree.children[0].children:
-                aliases.append(ST('alias', [child, alias_name]))
+            aliases = [
+                ST('alias', [child, alias_name])
+                for child in tree.children[0].children
+            ]
+
             tree.data = 'expansions'
             tree.children = aliases
 
@@ -780,18 +782,43 @@ class GrammarLoader:
                                (e.line, e.column, grammar_name, context))
         except UnexpectedToken as e:
             context = e.get_context(grammar_text)
-            error = e.match_examples(self.parser.parse, {
-                'Unclosed parenthesis': ['a: (\n'],
-                'Umatched closing parenthesis': ['a: )\n', 'a: [)\n', 'a: (]\n'],
-                'Expecting rule or terminal definition (missing colon)': ['a\n', 'a->\n', 'A->\n', 'a A\n'],
-                'Alias expects lowercase name': ['a: -> "a"\n'],
-                'Unexpected colon': ['a::\n', 'a: b:\n', 'a: B:\n', 'a: "a":\n'],
-                'Misplaced operator': ['a: b??', 'a: b(?)', 'a:+\n', 'a:?\n', 'a:*\n', 'a:|*\n'],
-                'Expecting option ("|") or a new rule or terminal definition': ['a:a\n()\n'],
-                '%import expects a name': ['%import "a"\n'],
-                '%ignore expects a value': ['%ignore %import\n'],
-            })
-            if error:
+            if error := e.match_examples(
+                self.parser.parse,
+                {
+                    'Unclosed parenthesis': ['a: (\n'],
+                    'Umatched closing parenthesis': [
+                        'a: )\n',
+                        'a: [)\n',
+                        'a: (]\n',
+                    ],
+                    'Expecting rule or terminal definition (missing colon)': [
+                        'a\n',
+                        'a->\n',
+                        'A->\n',
+                        'a A\n',
+                    ],
+                    'Alias expects lowercase name': ['a: -> "a"\n'],
+                    'Unexpected colon': [
+                        'a::\n',
+                        'a: b:\n',
+                        'a: B:\n',
+                        'a: "a":\n',
+                    ],
+                    'Misplaced operator': [
+                        'a: b??',
+                        'a: b(?)',
+                        'a:+\n',
+                        'a:?\n',
+                        'a:*\n',
+                        'a:|*\n',
+                    ],
+                    'Expecting option ("|") or a new rule or terminal definition': [
+                        'a:a\n()\n'
+                    ],
+                    '%import expects a name': ['%import "a"\n'],
+                    '%ignore expects a value': ['%ignore %import\n'],
+                },
+            ):
                 raise GrammarError("%s at line %s column %s\n\n%s" % (error, e.line, e.column, context))
             elif 'STRING' in e.expected:
                 raise GrammarError("Expecting a value at line %s column %s\n\n%s" % (e.line, e.column, context))
@@ -934,9 +961,8 @@ class GrammarLoader:
                 if sym.type == 'TERMINAL':
                     if sym not in terminal_names:
                         raise GrammarError("Token '%s' used but not defined (in rule %s)" % (sym, name))
-                else:
-                    if sym not in rule_names and sym not in params:
-                        raise GrammarError("Rule '%s' used but not defined (in rule %s)" % (sym, name))
+                elif sym not in rule_names and sym not in params:
+                    raise GrammarError("Rule '%s' used but not defined (in rule %s)" % (sym, name))
 
 
         return Grammar(rules, term_defs, ignore_names)

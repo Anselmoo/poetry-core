@@ -58,7 +58,7 @@ class ProjectPackage(Package):
 
         self._python_versions = value
 
-        if value == "*" or value == VersionRange():
+        if value in ["*", VersionRange()]:
             value = "~2.7 || >=3.4"
 
         self._python_constraint = parse_constraint(value)

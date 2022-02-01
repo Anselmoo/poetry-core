@@ -34,7 +34,7 @@ def format_python_constraint(
     """
     if isinstance(constraint, Version):
         if constraint.precision >= 3:
-            return f"=={str(constraint)}"
+            return f'=={constraint}'
 
         # Transform 3.6 or 3
         if constraint.precision == 2:
@@ -51,12 +51,11 @@ def format_python_constraint(
 
     for version in PYTHON_VERSION:
         version_constraint = parse_constraint(version)
-        matches = constraint.allows_any(version_constraint)
-        if not matches:
-            formatted.append("!=" + version)
-        else:
+        if matches := constraint.allows_any(version_constraint):
             accepted.append(version)
 
+        else:
+            formatted.append("!=" + version)
     # Checking lower bound
     low = accepted[0]
 

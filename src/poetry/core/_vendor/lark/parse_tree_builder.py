@@ -15,10 +15,7 @@ class ExpandSingleChild:
         self.node_builder = node_builder
 
     def __call__(self, children):
-        if len(children) == 1:
-            return children[0]
-        else:
-            return self.node_builder(children)
+        return children[0] if len(children) == 1 else self.node_builder(children)
 
 class PropagatePositions:
     def __init__(self, node_builder):
@@ -143,7 +140,7 @@ def maybe_create_child_filter(expansion, keep_all_tokens, ambiguous, _empty_indi
     nones_to_add = 0
     for i, sym in enumerate(expansion):
         nones_to_add += empty_indices[i]
-        if keep_all_tokens or not (sym.is_term and sym.filter_out):
+        if keep_all_tokens or not sym.is_term or not sym.filter_out:
             to_include.append((i, _should_expand(sym), nones_to_add))
             nones_to_add = 0
 
@@ -190,9 +187,12 @@ class AmbiguousExpander:
         return self.tree_class('_ambig', [self.node_builder(list(f[0])) for f in product(zip(*expand))])
 
 def maybe_create_ambiguous_expander(tree_class, expansion, keep_all_tokens):
-    to_expand = [i for i, sym in enumerate(expansion)
-                 if keep_all_tokens or ((not (sym.is_term and sym.filter_out)) and _should_expand(sym))]
-    if to_expand:
+    if to_expand := [
+        i
+        for i, sym in enumerate(expansion)
+        if keep_all_tokens
+        or ((not (sym.is_term and sym.filter_out)) and _should_expand(sym))
+    ]:
         return partial(AmbiguousExpander, to_expand, tree_class)
 
 def ptb_inline_args(func):
@@ -256,11 +256,10 @@ class ParseTreeBuilder:
                 wrapper = getattr(f, 'visit_wrapper', None)
                 if wrapper is not None:
                     f = apply_visit_wrapper(f, user_callback_name, wrapper)
-                else:
-                    if isinstance(transformer, InlineTransformer):
-                        f = ptb_inline_args(f)
-                    elif isinstance(transformer, Transformer_InPlace):
-                        f = inplace_transformer(f)
+                elif isinstance(transformer, InlineTransformer):
+                    f = ptb_inline_args(f)
+                elif isinstance(transformer, Transformer_InPlace):
+                    f = inplace_transformer(f)
             except AttributeError:
                 f = partial(self.tree_class, user_callback_name)
 

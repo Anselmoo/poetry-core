@@ -135,16 +135,12 @@ class Source(unicode):
 
             return False
 
-    def inc_n(self, n, exception=None):  # type: (int, Exception) -> bool
+    def inc_n(self, n, exception=None):    # type: (int, Exception) -> bool
         """
         Increments the parser by n characters
         if the end of the input has not been reached.
         """
-        for _ in range(n):
-            if not self.inc(exception=exception):
-                return False
-
-        return True
+        return all(self.inc(exception=exception) for _ in range(n))
 
     def consume(self, chars, min=0, max=-1):
         """

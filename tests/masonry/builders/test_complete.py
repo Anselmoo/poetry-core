@@ -591,5 +591,3 @@ def test_respect_format_for_explicit_included_files():
         assert "exclude_whl_include_sdist/compiled/source.c" not in names
         assert "exclude_whl_include_sdist/compiled/source.h" not in names
         assert "exclude_whl_include_sdist/cython_code.pyx" not in names
-
-    pass

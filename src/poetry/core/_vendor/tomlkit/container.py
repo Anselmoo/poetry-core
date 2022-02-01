@@ -186,7 +186,6 @@ class Container(dict):
             else:
                 raise KeyAlreadyPresent(key)
 
-        is_table = isinstance(item, (Table, AoT))
         if key is not None and self._body and not self._parsed:
             # If there is already at least one table in the current container
             # and the given item is not a table, we need to find the last
@@ -194,6 +193,7 @@ class Container(dict):
             # If no such item exists, insert at the top of the table
             key_after = None
             idx = 0
+            is_table = isinstance(item, (Table, AoT))
             for k, v in self._body:
                 if isinstance(v, Null):
                     # This happens only after deletion
@@ -208,23 +208,20 @@ class Container(dict):
                 key_after = k or idx
                 idx += 1
 
-            if key_after is not None:
-                if isinstance(key_after, int):
-                    if key_after + 1 < len(self._body) - 1:
-                        return self._insert_at(key_after + 1, key, item)
-                    else:
-                        previous_item = self._body[-1][1]
-                        if (
-                            not isinstance(previous_item, Whitespace)
-                            and not is_table
-                            and "\n" not in previous_item.trivia.trail
-                        ):
-                            previous_item.trivia.trail += "\n"
-                else:
-                    return self._insert_after(key_after, key, item)
-            else:
+            if key_after is None:
                 return self._insert_at(0, key, item)
 
+            if not isinstance(key_after, int):
+                return self._insert_after(key_after, key, item)
+            if key_after + 1 < len(self._body) - 1:
+                return self._insert_at(key_after + 1, key, item)
+            previous_item = self._body[-1][1]
+            if (
+                not isinstance(previous_item, Whitespace)
+                and not is_table
+                and "\n" not in previous_item.trivia.trail
+            ):
+                previous_item.trivia.trail += "\n"
         if key in self._map:
             current_idx = self._map[key]
             if isinstance(current_idx, tuple):
@@ -381,16 +378,12 @@ class Container(dict):
     def as_string(self):  # type: () -> str
         s = ""
         for k, v in self._body:
-            if k is not None:
-                if isinstance(v, Table):
-                    s += self._render_table(k, v)
-                elif isinstance(v, AoT):
-                    s += self._render_aot(k, v)
-                else:
-                    s += self._render_simple_item(k, v)
+            if k is not None and isinstance(v, Table):
+                s += self._render_table(k, v)
+            elif k is not None and isinstance(v, AoT):
+                s += self._render_aot(k, v)
             else:
                 s += self._render_simple_item(k, v)
-
         return s
 
     def _render_table(
@@ -412,10 +405,7 @@ class Container(dict):
             )
             and not key.is_dotted()
         ):
-            open_, close = "[", "]"
-            if table.is_aot_element():
-                open_, close = "[[", "]]"
-
+            open_, close = ("[[", "]]") if table.is_aot_element() else ("[", "]")
             cur += "{}{}{}{}{}{}{}{}".format(
                 table.trivia.indent,
                 open_,
@@ -451,12 +441,10 @@ class Container(dict):
         if prefix is not None:
             _key = prefix + "." + _key
 
-        cur = ""
         _key = decode(_key)
-        for table in aot.body:
-            cur += self._render_aot_table(table, prefix=_key)
-
-        return cur
+        return "".join(
+            self._render_aot_table(table, prefix=_key) for table in aot.body
+        )
 
     def _render_aot_table(self, table, prefix=None):  # (Table, Optional[str]) -> str
         cur = ""
@@ -478,12 +466,9 @@ class Container(dict):
 
         for k, v in table.value.body:
             if isinstance(v, Table):
-                if v.is_super_table():
-                    if k.is_dotted():
-                        # Dotted key inside table
-                        cur += self._render_table(k, v)
-                    else:
-                        cur += self._render_table(k, v, prefix=_key)
+                if v.is_super_table() and k.is_dotted():
+                    # Dotted key inside table
+                    cur += self._render_table(k, v)
                 else:
                     cur += self._render_table(k, v, prefix=_key)
             elif isinstance(v, AoT):
@@ -656,10 +641,7 @@ class Container(dict):
         return super(Container, self).__repr__()
 
     def __eq__(self, other):  # type: (Dict) -> bool
-        if not isinstance(other, dict):
-            return NotImplemented
-
-        return self.value == other
+        return NotImplemented if not isinstance(other, dict) else self.value == other
 
     def _getstate(self, protocol):
         return (self._parsed,)

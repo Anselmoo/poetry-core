@@ -258,7 +258,7 @@ class Dependency(PackageSpecification):
 
         if isinstance(self.constraint, VersionUnion):
             if self.constraint.excludes_single_version():
-                requirement += f" ({str(self.constraint)})"
+                requirement += f' ({self.constraint})'
             else:
                 constraints = self.pretty_constraint.split(",")
                 constraints = [parse_constraint(c) for c in constraints]
@@ -320,14 +320,12 @@ class Dependency(PackageSpecification):
                 markers.append(str(marker))
 
             has_extras = "extra" in convert_markers(marker)
-        else:
-            # Python marker
-            if self.python_versions != "*":
-                python_constraint = self.python_constraint
+        elif self.python_versions != "*":
+            python_constraint = self.python_constraint
 
-                markers.append(
-                    self._create_nested_marker("python_version", python_constraint)
-                )
+            markers.append(
+                self._create_nested_marker("python_version", python_constraint)
+            )
 
         in_extras = " || ".join(self._in_extras)
         if in_extras and with_extras and not has_extras:
@@ -359,10 +357,7 @@ class Dependency(PackageSpecification):
         if isinstance(constraint, (MultiConstraint, UnionConstraint)):
             parts = []
             for c in constraint.constraints:
-                multi = False
-                if isinstance(c, (MultiConstraint, UnionConstraint)):
-                    multi = True
-
+                multi = isinstance(c, (MultiConstraint, UnionConstraint))
                 parts.append((multi, self._create_nested_marker(name, c)))
 
             glue = " and "
@@ -372,23 +367,20 @@ class Dependency(PackageSpecification):
             else:
                 parts = [part[1] for part in parts]
 
-            marker = glue.join(parts)
+            return glue.join(parts)
         elif isinstance(constraint, Constraint):
-            marker = f'{name} {constraint.operator} "{constraint.version}"'
+            return f'{name} {constraint.operator} "{constraint.version}"'
         elif isinstance(constraint, VersionUnion):
-            parts = []
-            for c in constraint.ranges:
-                parts.append(self._create_nested_marker(name, c))
-
+            parts = [self._create_nested_marker(name, c) for c in constraint.ranges]
             glue = " or "
             parts = [f"({part})" for part in parts]
 
-            marker = glue.join(parts)
+            return glue.join(parts)
         elif isinstance(constraint, Version):
             if constraint.precision >= 3 and name == "python_version":
                 name = "python_full_version"
 
-            marker = f'{name} == "{constraint.text}"'
+            return f'{name} == "{constraint.text}"'
         else:
             if constraint.min is not None:
                 min_name = name
@@ -398,14 +390,14 @@ class Dependency(PackageSpecification):
                     if constraint.max is None:
                         name = min_name
 
-                op = ">="
-                if not constraint.include_min:
-                    op = ">"
-
+                op = ">" if not constraint.include_min else ">="
                 version = constraint.min.text
                 if constraint.max is not None:
                     max_name = name
-                    if constraint.max.precision >= 3 and name == "python_version":
+                    if (
+                        constraint.max.precision >= 3
+                        and max_name == "python_version"
+                    ):
                         max_name = "python_full_version"
 
                     text = f'{min_name} {op} "{version}"'
@@ -423,17 +415,12 @@ class Dependency(PackageSpecification):
                 if constraint.max.precision >= 3 and name == "python_version":
                     name = "python_full_version"
 
-                op = "<="
-                if not constraint.include_max:
-                    op = "<"
-
+                op = "<" if not constraint.include_max else "<="
                 version = constraint.max
             else:
                 return ""
 
-            marker = f'{name} {op} "{version}"'
-
-        return marker
+            return f'{name} {op} "{version}"'
 
     def activate(self) -> None:
         """
@@ -589,11 +576,7 @@ class Dependency(PackageSpecification):
             if version:
                 dep._constraint = parse_constraint(version)
         else:
-            if req.pretty_constraint:
-                constraint = req.constraint
-            else:
-                constraint = "*"
-
+            constraint = req.constraint if req.pretty_constraint else "*"
             dep = Dependency(name, constraint, extras=req.extras)
 
         if req.marker:
@@ -618,12 +601,10 @@ class Dependency(PackageSpecification):
         return super().__hash__() ^ hash(self._constraint) ^ hash(self._extras)
 
     def __str__(self) -> str:
-        if self.is_root:
-            return self._pretty_name
-        return self.base_pep_508_name
+        return self._pretty_name if self.is_root else self.base_pep_508_name
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} {str(self)}>"
+        return f'<{self.__class__.__name__} {self}>'
 
 
 def _make_file_or_dir_dep(

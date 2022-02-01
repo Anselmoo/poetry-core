@@ -101,10 +101,7 @@ class Module:
 
     @property
     def file(self) -> Path:
-        if self._is_package:
-            return self._path / "__init__.py"
-        else:
-            return self._path
+        return self._path / "__init__.py" if self._is_package else self._path
 
     @property
     def includes(self) -> List["Include"]:

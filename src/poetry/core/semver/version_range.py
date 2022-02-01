@@ -102,7 +102,7 @@ class VersionRange(VersionRangeConstraint):
             return self.allows(other)
 
         if isinstance(other, VersionUnion):
-            return all([self.allows_all(constraint) for constraint in other.ranges])
+            return all(self.allows_all(constraint) for constraint in other.ranges)
 
         if isinstance(other, VersionRangeConstraint):
             return not other.allows_lower(self) and not other.allows_higher(self)
@@ -119,7 +119,7 @@ class VersionRange(VersionRangeConstraint):
             return self.allows(other)
 
         if isinstance(other, VersionUnion):
-            return any([self.allows_any(constraint) for constraint in other.ranges])
+            return any(self.allows_any(constraint) for constraint in other.ranges)
 
         if isinstance(other, VersionRangeConstraint):
             return not other.is_strictly_lower(self) and not other.is_strictly_higher(
@@ -139,11 +139,7 @@ class VersionRange(VersionRangeConstraint):
 
         # A range and a Version just yields the version if it's in the range.
         if isinstance(other, Version):
-            if self.allows(other):
-                return other
-
-            return EmptyConstraint()
-
+            return other if self.allows(other) else EmptyConstraint()
         if not isinstance(other, VersionRangeConstraint):
             raise ValueError(f"Unknown VersionConstraint type {other}.")
 
@@ -350,10 +346,7 @@ class VersionRange(VersionRangeConstraint):
 
     def _cmp(self, other: "VersionRangeConstraint") -> int:
         if self.min is None:
-            if other.min is None:
-                return self._compare_max(other)
-
-            return -1
+            return self._compare_max(other) if other.min is None else -1
         elif other.min is None:
             return 1
 
@@ -369,10 +362,7 @@ class VersionRange(VersionRangeConstraint):
 
     def _compare_max(self, other: "VersionRangeConstraint") -> int:
         if self.max is None:
-            if other.max is None:
-                return 0
-
-            return 1
+            return 0 if other.max is None else 1
         elif other.max is None:
             return -1
 
@@ -406,7 +396,7 @@ class VersionRange(VersionRangeConstraint):
         return text
 
     def __repr__(self) -> str:
-        return f"<VersionRange ({str(self)})>"
+        return f'<VersionRange ({self})>'
 
     def __hash__(self) -> int:
         return (

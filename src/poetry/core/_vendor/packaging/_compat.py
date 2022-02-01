@@ -12,14 +12,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 PY2 = sys.version_info[0] == 2
-PY3 = sys.version_info[0] == 3
-
-# flake8: noqa
-
-if PY3:
-    string_types = (str,)
-else:
-    string_types = (basestring,)
+string_types = (str, ) if (PY3 := sys.version_info[0] == 3) else (basestring, )
 
 
 def with_metaclass(meta, *bases):

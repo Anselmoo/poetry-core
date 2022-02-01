@@ -47,7 +47,7 @@ class VersionUnion(VersionConstraint):
         if not flattened:
             return EmptyConstraint()
 
-        if any([constraint.is_any() for constraint in flattened]):
+        if any(constraint.is_any() for constraint in flattened):
             return VersionRange()
 
         # Only allow Versions and VersionRanges here so we can more easily reason
@@ -84,7 +84,7 @@ class VersionUnion(VersionConstraint):
         return False
 
     def allows(self, version: "Version") -> bool:
-        return any([constraint.allows(version) for constraint in self._ranges])
+        return any(constraint.allows(version) for constraint in self._ranges)
 
     def allows_all(self, other: "VersionTypes") -> bool:
         our_ranges = iter(self._ranges)
@@ -264,4 +264,4 @@ class VersionUnion(VersionConstraint):
         return " || ".join([str(r) for r in self._ranges])
 
     def __repr__(self) -> str:
-        return f"<VersionUnion {str(self)}>"
+        return f'<VersionUnion {self}>'

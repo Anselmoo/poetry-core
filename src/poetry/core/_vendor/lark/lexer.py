@@ -152,8 +152,7 @@ class LineCounter:
         As an optional optimization, set test_newline=False is token doesn't contain a newline.
         """
         if test_newline:
-            newlines = token.count(self.newline_char)
-            if newlines:
+            if newlines := token.count(self.newline_char):
                 self.line += newlines
                 self.line_start_pos = self.char_pos + token.rindex(self.newline_char) + 1
 
@@ -210,8 +209,7 @@ class UnlessCallback:
 
     def __call__(self, t):
         for mre, type_from_index in self.mres:
-            m = mre.match(t.value)
-            if m:
+            if m := mre.match(t.value):
                 t.type = type_from_index[m.lastindex]
                 break
         return t
@@ -336,8 +334,7 @@ class TraditionalLexer(Lexer):
 
     def match(self, stream, pos):
         for mre, type_from_index in self.mres:
-            m = mre.match(stream, pos)
-            if m:
+            if m := mre.match(stream, pos):
                 return m.group(0), type_from_index[m.lastindex]
 
     def lex(self, stream):

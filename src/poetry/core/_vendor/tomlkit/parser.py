@@ -386,8 +386,6 @@ class Parser:
                     raise self.parse_error(UnexpectedCharError, "=")
                 else:
                     found_equals = True
-            pass
-
         if not key.sep:
             key.sep = self.extract()
         else:
@@ -549,7 +547,7 @@ class Parser:
 
                     table = table[_name]
 
-    def _parse_value(self):  # type: () -> Item
+    def _parse_value(self):    # type: () -> Item
         """
         Attempts to parse a value at the current position.
         """
@@ -595,8 +593,7 @@ class Parser:
 
             raw = self.extract()
 
-            m = RFC_3339_LOOSE.match(raw)
-            if m:
+            if m := RFC_3339_LOOSE.match(raw):
                 if m.group(1) and m.group(5):
                     # datetime
                     try:
@@ -753,8 +750,7 @@ class Parser:
             # consume leading whitespace
             mark = self._idx
             self.consume(TOMLChar.SPACES)
-            raw = self._src[mark : self._idx]
-            if raw:
+            if raw := self._src[mark : self._idx]:
                 elems.add(Whitespace(raw))
 
             if not trailing_comma:
@@ -773,10 +769,8 @@ class Parser:
                     # Either the previous key-value pair was not followed by a comma
                     # or the table has an unexpected leading comma.
                     raise self.parse_error(UnexpectedCharError, self._current)
-            else:
-                # True: previous key-value pair was followed by a comma
-                if self._current == "}" or self._current == ",":
-                    raise self.parse_error(UnexpectedCharError, self._current)
+            elif self._current in ["}", ","]:
+                raise self.parse_error(UnexpectedCharError, self._current)
 
             key, val = self._parse_key_value(False)
             if key.is_dotted():
@@ -787,13 +781,10 @@ class Parser:
             # consume trailing whitespace
             mark = self._idx
             self.consume(TOMLChar.SPACES)
-            raw = self._src[mark : self._idx]
-            if raw:
+            if raw := self._src[mark : self._idx]:
                 elems.add(Whitespace(raw))
 
-            # consume trailing comma
-            trailing_comma = self._current == ","
-            if trailing_comma:
+            if trailing_comma := self._current == ",":
                 # consume closing bracket, EOF here is an issue (middle of inline table)
                 self.inc(exception=UnexpectedEofError)
 

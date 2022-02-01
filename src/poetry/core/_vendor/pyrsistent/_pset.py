@@ -61,7 +61,7 @@ class PSet(object):
 
     @classmethod
     def _from_iterable(cls, it, pre_size=8):
-        return PSet(pmap(dict((k, True) for k in it), pre_size=pre_size))
+        return PSet(pmap({k: True for k in it}, pre_size=pre_size))
 
     def add(self, element):
         """

@@ -34,10 +34,8 @@ def parse_constraint(constraints: str) -> VersionTypes:
         else:
             constraint_objects.append(parse_single_constraint(and_constraints[0]))
 
-        if len(constraint_objects) == 1:
-            constraint = constraint_objects[0]
-        else:
-            constraint = constraint_objects[0]
+        constraint = constraint_objects[0]
+        if len(constraint_objects) != 1:
             for next_constraint in constraint_objects[1:]:
                 constraint = constraint.intersect(next_constraint)
 
@@ -45,10 +43,9 @@ def parse_constraint(constraints: str) -> VersionTypes:
 
     if len(or_groups) == 1:
         return or_groups[0]
-    else:
-        from poetry.core.semver.version_union import VersionUnion
+    from poetry.core.semver.version_union import VersionUnion
 
-        return VersionUnion.of(*or_groups)
+    return VersionUnion.of(*or_groups)
 
 
 def parse_single_constraint(constraint: str) -> VersionTypes:
@@ -61,13 +58,10 @@ def parse_single_constraint(constraint: str) -> VersionTypes:
     from poetry.core.semver.version_range import VersionRange
     from poetry.core.semver.version_union import VersionUnion
 
-    m = re.match(r"(?i)^v?[xX*](\.[xX*])*$", constraint)
-    if m:
+    if m := re.match(r"(?i)^v?[xX*](\.[xX*])*$", constraint):
         return VersionRange()
 
-    # Tilde range
-    m = TILDE_CONSTRAINT.match(constraint)
-    if m:
+    if m := TILDE_CONSTRAINT.match(constraint):
         version = Version.parse(m.group(1))
         high = version.stable.next_minor()
         if len(m.group(1).split(".")) == 1:
@@ -75,9 +69,7 @@ def parse_single_constraint(constraint: str) -> VersionTypes:
 
         return VersionRange(version, high, include_min=True)
 
-    # PEP 440 Tilde range (~=)
-    m = TILDE_PEP440_CONSTRAINT.match(constraint)
-    if m:
+    if m := TILDE_PEP440_CONSTRAINT.match(constraint):
         precision = 1
         if m.group(3):
             precision += 1
@@ -94,16 +86,12 @@ def parse_single_constraint(constraint: str) -> VersionTypes:
 
         return VersionRange(version, high, include_min=True)
 
-    # Caret range
-    m = CARET_CONSTRAINT.match(constraint)
-    if m:
+    if m := CARET_CONSTRAINT.match(constraint):
         version = Version.parse(m.group(1))
 
         return VersionRange(version, version.next_breaking(), include_min=True)
 
-    # X Range
-    m = X_CONSTRAINT.match(constraint)
-    if m:
+    if m := X_CONSTRAINT.match(constraint):
         op = m.group(1)
         major = int(m.group(2))
         minor = m.group(3)
@@ -111,22 +99,19 @@ def parse_single_constraint(constraint: str) -> VersionTypes:
         if minor is not None:
             version = Version.from_parts(major, int(minor), 0)
             result = VersionRange(version, version.next_minor(), include_min=True)
+        elif major == 0:
+            result = VersionRange(max=Version.from_parts(1, 0, 0))
         else:
-            if major == 0:
-                result = VersionRange(max=Version.from_parts(1, 0, 0))
-            else:
-                version = Version.from_parts(major, 0, 0)
+            version = Version.from_parts(major, 0, 0)
 
-                result = VersionRange(version, version.next_major(), include_min=True)
+            result = VersionRange(version, version.next_major(), include_min=True)
 
         if op == "!=":
             result = VersionRange().difference(result)
 
         return result
 
-    # Basic comparator
-    m = BASIC_CONSTRAINT.match(constraint)
-    if m:
+    if m := BASIC_CONSTRAINT.match(constraint):
         op = m.group(1)
         version = m.group(2)
 

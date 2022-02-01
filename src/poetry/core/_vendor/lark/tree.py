@@ -88,11 +88,9 @@ class Tree(object):
     def scan_values(self, pred):
         for c in self.children:
             if isinstance(c, Tree):
-                for t in c.scan_values(pred):
-                    yield t
-            else:
-                if pred(c):
-                    yield c
+                yield from c.scan_values(pred)
+            elif pred(c):
+                yield c
 
     def iter_subtrees_topdown(self):
         stack = [self]

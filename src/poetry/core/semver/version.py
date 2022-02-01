@@ -30,10 +30,7 @@ class Version(PEP440Version, VersionRangeConstraint):
 
     @property
     def stable(self) -> "Version":
-        if self.is_stable():
-            return self
-
-        return self.next_patch()
+        return self if self.is_stable() else self.next_patch()
 
     def next_breaking(self) -> "Version":
         if self.major == 0:
@@ -107,10 +104,7 @@ class Version(PEP440Version, VersionRangeConstraint):
         return other.allows(self)
 
     def intersect(self, other: "VersionTypes") -> Union["Version", EmptyConstraint]:
-        if other.allows(self):
-            return self
-
-        return EmptyConstraint()
+        return self if other.allows(self) else EmptyConstraint()
 
     def union(self, other: "VersionTypes") -> "VersionTypes":
         from poetry.core.semver.version_range import VersionRange
@@ -138,16 +132,13 @@ class Version(PEP440Version, VersionRangeConstraint):
         return VersionUnion.of(self, other)
 
     def difference(self, other: "VersionTypes") -> Union["Version", EmptyConstraint]:
-        if other.allows(self):
-            return EmptyConstraint()
-
-        return self
+        return EmptyConstraint() if other.allows(self) else self
 
     def __str__(self) -> str:
         return self.text
 
     def __repr__(self) -> str:
-        return f"<Version {str(self)}>"
+        return f'<Version {self}>'
 
     def __eq__(self, other: Union["Version", "VersionRangeConstraint"]) -> bool:
         from poetry.core.semver.version_range import VersionRange

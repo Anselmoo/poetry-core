@@ -261,10 +261,7 @@ def cpython_tags(
     interpreter = "cp{}".format(_version_nodot(python_version[:2]))
 
     if abis is None:
-        if len(python_version) > 1:
-            abis = _cpython_abis(python_version, warn)
-        else:
-            abis = []
+        abis = _cpython_abis(python_version, warn) if len(python_version) > 1 else []
     abis = list(abis)
     # 'abi3' and 'none' are explicitly handled later.
     for explicit_abi in ("abi3", "none"):
@@ -278,11 +275,8 @@ def cpython_tags(
         for platform_ in platforms:
             yield Tag(interpreter, abi, platform_)
     if _abi3_applies(python_version):
-        for tag in (Tag(interpreter, "abi3", platform_) for platform_ in platforms):
-            yield tag
-    for tag in (Tag(interpreter, "none", platform_) for platform_ in platforms):
-        yield tag
-
+        yield from (Tag(interpreter, "abi3", platform_) for platform_ in platforms)
+    yield from (Tag(interpreter, "none", platform_) for platform_ in platforms)
     if _abi3_applies(python_version):
         for minor_version in range(python_version[1] - 1, 1, -1):
             for platform_ in platforms:
@@ -293,9 +287,7 @@ def cpython_tags(
 
 
 def _generic_abi():
-    # type: () -> Iterator[str]
-    abi = sysconfig.get_config_var("SOABI")
-    if abi:
+    if abi := sysconfig.get_config_var("SOABI"):
         yield _normalize_string(abi)
 
 
@@ -431,11 +423,7 @@ def mac_platforms(version=None, arch=None):
         version = cast("MacVersion", tuple(map(int, version_str.split(".")[:2])))
     else:
         version = version
-    if arch is None:
-        arch = _mac_arch(cpu_arch)
-    else:
-        arch = arch
-
+    arch = _mac_arch(cpu_arch) if arch is None else arch
     if (10, 0) <= version and version < (11, 0):
         # Prior to Mac OS 11, each yearly release of Mac OS bumped the
         # "minor" version number.  The major version was always 10.
@@ -506,15 +494,18 @@ def _is_manylinux_compatible(name, arch, glibc_version):
             if result is not None:
                 return bool(result)
         else:
-            if glibc_version == (2, 5):
-                if hasattr(_manylinux, "manylinux1_compatible"):
-                    return bool(_manylinux.manylinux1_compatible)
-            if glibc_version == (2, 12):
-                if hasattr(_manylinux, "manylinux2010_compatible"):
-                    return bool(_manylinux.manylinux2010_compatible)
-            if glibc_version == (2, 17):
-                if hasattr(_manylinux, "manylinux2014_compatible"):
-                    return bool(_manylinux.manylinux2014_compatible)
+            if glibc_version == (2, 5) and hasattr(
+                _manylinux, "manylinux1_compatible"
+            ):
+                return bool(_manylinux.manylinux1_compatible)
+            if glibc_version == (2, 12) and hasattr(
+                _manylinux, "manylinux2010_compatible"
+            ):
+                return bool(_manylinux.manylinux2010_compatible)
+            if glibc_version == (2, 17) and hasattr(
+                _manylinux, "manylinux2014_compatible"
+            ):
+                return bool(_manylinux.manylinux2014_compatible)
     return True
 
 
@@ -789,8 +780,7 @@ def _linux_platforms(is_32bit=_32_BIT_INTERPRETER):
             linux = "linux_armv7l"
     _, arch = linux.split("_", 1)
     if _have_compatible_manylinux_abi(arch):
-        for tag in _manylinux_tags(linux, arch):
-            yield tag
+        yield from _manylinux_tags(linux, arch)
     yield linux
 
 
@@ -832,10 +822,7 @@ def interpreter_version(**kwargs):
     """
     warn = _warn_keyword_parameter("interpreter_version", kwargs)
     version = _get_config_var("py_version_nodot", warn=warn)
-    if version:
-        version = str(version)
-    else:
-        version = _version_nodot(sys.version_info[:2])
+    version = str(version) if version else _version_nodot(sys.version_info[:2])
     return version
 
 
@@ -856,11 +843,7 @@ def sys_tags(**kwargs):
 
     interp_name = interpreter_name()
     if interp_name == "cp":
-        for tag in cpython_tags(warn=warn):
-            yield tag
+        yield from cpython_tags(warn=warn)
     else:
-        for tag in generic_tags():
-            yield tag
-
-    for tag in compatible_tags():
-        yield tag
+        yield from generic_tags()
+    yield from compatible_tags()

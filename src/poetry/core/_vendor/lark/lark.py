@@ -162,9 +162,7 @@ class Lark(Serialize):
 
         self.options = LarkOptions(options)
 
-        # Set regex or re module
-        use_regex = self.options.regex
-        if use_regex:
+        if use_regex := self.options.regex:
             if regex:
                 self.re = regex
             else:
@@ -256,15 +254,13 @@ class Lark(Serialize):
 
         # If the user asked to invert the priorities, negate them all here.
         # This replaces the old 'resolve__antiscore_sum' option.
-        if self.options.priority == 'invert':
-            for rule in self.rules:
+        for rule in self.rules:
+                # If the user asked to invert the priorities, negate them all here.
+                # This replaces the old 'resolve__antiscore_sum' option.
+            if self.options.priority == 'invert':
                 if rule.options.priority is not None:
                     rule.options.priority = -rule.options.priority
-        # Else, if the user asked to disable priorities, strip them from the
-        # rules. This allows the Earley parsers to skip an extra forest walk
-        # for improved performance, if you don't need them (or didn't specify any).
-        elif self.options.priority == None:
-            for rule in self.rules:
+            elif self.options.priority is None:
                 if rule.options.priority is not None:
                     rule.options.priority = None
 
@@ -316,10 +312,7 @@ class Lark(Serialize):
         return inst._load(f)
 
     def _load(self, f, transformer=None, postlex=None):
-        if isinstance(f, dict):
-            d = f
-        else:
-            d = pickle.load(f)
+        d = f if isinstance(f, dict) else pickle.load(f)
         memo = d['memo']
         data = d['data']
 

@@ -96,9 +96,9 @@ class PackageSpecification:
             ):
                 return True
 
-            if self._source_reference or other.source_reference:
+            if self._source_reference:
                 # special handling for packages with references
-                if not self._source_reference or not other.source_reference:
+                if not other.source_reference:
                     # case: one reference is defined and is non-empty, but other is not
                     return False
 
@@ -118,6 +118,10 @@ class PackageSpecification:
                     != other.source_resolved_reference
                 ):
                     return False
+
+            elif other.source_reference:
+                # case: one reference is defined and is non-empty, but other is not
+                return False
 
         return True
 

@@ -30,10 +30,7 @@ def test_create_poetry():
     assert package.python_versions == "~2.7 || ^3.6"
     assert str(package.python_constraint) == ">=2.7,<2.8 || >=3.6,<4.0"
 
-    dependencies = {}
-    for dep in package.requires:
-        dependencies[dep.name] = dep
-
+    dependencies = {dep.name: dep for dep in package.requires}
     cleo = dependencies["cleo"]
     assert cleo.pretty_constraint == "^0.6"
     assert not cleo.is_optional()
@@ -219,7 +216,7 @@ The Poetry configuration is invalid:
 
 def test_create_poetry_omits_dev_dependencies_iff_with_dev_is_false():
     poetry = Factory().create_poetry(fixtures_dir / "sample_project", with_groups=False)
-    assert not any("dev" in r.groups for r in poetry.package.all_requires)
+    assert all("dev" not in r.groups for r in poetry.package.all_requires)
 
     poetry = Factory().create_poetry(fixtures_dir / "sample_project")
     assert any("dev" in r.groups for r in poetry.package.all_requires)

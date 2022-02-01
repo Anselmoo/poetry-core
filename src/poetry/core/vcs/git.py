@@ -117,8 +117,7 @@ class ParsedUrl:
     @classmethod
     def parse(cls, url: str) -> "ParsedUrl":
         for pattern in PATTERNS:
-            m = pattern.match(url)
-            if m:
+            if m := pattern.match(url):
                 groups = m.groupdict()
                 return ParsedUrl(
                     groups.get("protocol"),
@@ -201,8 +200,7 @@ class GitConfig:
                 [executable(), "config", "-l"], stderr=subprocess.STDOUT
             ).decode()
 
-            m = re.findall("(?ms)^([^=]+)=(.*?)$", config_list)
-            if m:
+            if m := re.findall("(?ms)^([^=]+)=(.*?)$", config_list):
                 for group in m:
                     self._config[group[0]] = group[1]
         except (subprocess.CalledProcessError, OSError):
@@ -234,9 +232,7 @@ class Git:
                 fr"[#&]subdirectory={parsed.subdirectory}$", "", formatted
             )
 
-        altered = parsed.format() != formatted
-
-        if altered:
+        if altered := parsed.format() != formatted:
             if re.match(r"^git\+https?", url) and re.match(
                 r"^/?:[^0-9]", parsed.pathname or ""
             ):
@@ -343,8 +339,7 @@ class Git:
         return urls.get("remote.origin.url", urls[list(urls.keys())[0]])
 
     def run(self, *args: Any, **kwargs: Any) -> str:
-        folder = kwargs.pop("folder", None)
-        if folder:
+        if folder := kwargs.pop("folder", None):
             args = (
                 "--git-dir",
                 (folder / ".git").as_posix(),

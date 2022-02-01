@@ -31,11 +31,7 @@ class PyProjectTOML:
         from tomlkit.toml_document import TOMLDocument
 
         if self._data is None:
-            if not self._file.exists():
-                self._data = TOMLDocument()
-            else:
-                self._data = self._file.read()
-
+            self._data = TOMLDocument() if not self._file.exists() else self._file.read()
         return self._data
 
     @property

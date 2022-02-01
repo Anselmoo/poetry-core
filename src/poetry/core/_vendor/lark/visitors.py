@@ -171,8 +171,7 @@ class Transformer_NonRecursive(Transformer):
         stack = []
         for x in reversed(rev_postfix):
             if isinstance(x, Tree):
-                size = len(x.children)
-                if size:
+                if size := len(x.children):
                     args = stack[-size:]
                     del stack[-size:]
                 else:

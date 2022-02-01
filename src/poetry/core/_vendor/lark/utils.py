@@ -86,8 +86,7 @@ class Serialize(object):
         fields = getattr(self, '__serialize_fields__')
         res = {f: _serialize(getattr(self, f), memo) for f in fields}
         res['__type__'] = type(self).__name__
-        postprocess = getattr(self, '_serialize', None)
-        if postprocess:
+        if postprocess := getattr(self, '_serialize', None):
             postprocess(res, memo)
         return res
 
@@ -107,8 +106,7 @@ class Serialize(object):
                 setattr(inst, f, _deserialize(data[f], namespace, memo))
             except KeyError as e:
                 raise KeyError("Cannot find key for class", cls, e)
-        postprocess = getattr(inst, '_deserialize', None)
-        if postprocess:
+        if postprocess := getattr(inst, '_deserialize', None):
             postprocess()
         return inst
 
@@ -182,9 +180,9 @@ def get_regexp_width(expr):
         # a simple letter, which makes no difference as we are only trying to get the possible lengths of the regex
         # match here below.
         regexp_final = re.sub(categ_pattern, 'A', expr)
+    elif re.search(categ_pattern, expr):
+        raise ImportError('`regex` module must be installed in order to use Unicode categories.', expr)
     else:
-        if re.search(categ_pattern, expr):
-            raise ImportError('`regex` module must be installed in order to use Unicode categories.', expr)
         regexp_final = expr
     try:
         return [int(x) for x in sre_parse.parse(regexp_final).getwidth()]
@@ -297,7 +295,7 @@ def combine_alternatives(lists):
     """
     if not lists:
         return [[]]
-    assert all(l for l in lists), lists
+    assert all(lists), lists
     init = [[x] for x in lists[0]]
     return reduce(lambda a,b: [i+[j] for i in a for j in b], lists[1:], init)
 

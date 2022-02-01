@@ -67,8 +67,7 @@ class _Parser:
                 raise UnexpectedToken(token, expected, state=state, puppet=puppet)
 
         def reduce(rule):
-            size = len(rule.expansion)
-            if size:
+            if size := len(rule.expansion):
                 s = value_stack[-size:]
                 del state_stack[-size:]
                 del value_stack[-size:]

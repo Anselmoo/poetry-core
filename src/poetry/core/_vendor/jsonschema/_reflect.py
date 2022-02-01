@@ -142,11 +142,10 @@ def namedAny(name):
                 topLevelPackage = _importAndCheckStack(trialname)
             except _NoModuleFound:
                 moduleNames.pop()
+        elif len(names) == 1:
+            raise ModuleNotFound("No module named %r" % (name,))
         else:
-            if len(names) == 1:
-                raise ModuleNotFound("No module named %r" % (name,))
-            else:
-                raise ObjectNotFound('%r does not name an object' % (name,))
+            raise ObjectNotFound('%r does not name an object' % (name,))
 
     obj = topLevelPackage
     for n in names[1:]:

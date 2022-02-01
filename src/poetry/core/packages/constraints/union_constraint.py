@@ -73,11 +73,7 @@ class UnionConstraint(BaseConstraint):
             return other
 
         if isinstance(other, Constraint):
-            if self.allows(other):
-                return other
-
-            return EmptyConstraint()
-
+            return other if self.allows(other) else EmptyConstraint()
         other = cast(Union[MultiConstraint, UnionConstraint], other)
 
         new_constraints = []
@@ -111,8 +107,5 @@ class UnionConstraint(BaseConstraint):
         return set(self._constraints) == set(other._constraints)
 
     def __str__(self) -> str:
-        constraints = []
-        for constraint in self._constraints:
-            constraints.append(str(constraint))
-
+        constraints = [str(constraint) for constraint in self._constraints]
         return " || ".join(constraints)

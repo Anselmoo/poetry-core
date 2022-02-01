@@ -41,14 +41,10 @@ except ImportError:
 
         def __getinitargs__(self):
             """pickle support"""
-            if self._name is None:
-                return (self._offset,)
-            return (self._offset, self._name)
+            return (self._offset, ) if self._name is None else (self._offset, self._name)
 
         def __eq__(self, other):
-            if type(other) != timezone:
-                return False
-            return self._offset == other._offset
+            return False if type(other) != timezone else self._offset == other._offset
 
         def __hash__(self):
             return hash(self._offset)
@@ -122,8 +118,7 @@ except ImportError:
             hours, rest = divmod(delta, timedelta(hours=1))
             minutes, rest = divmod(rest, timedelta(minutes=1))
             seconds = rest.seconds
-            microseconds = rest.microseconds
-            if microseconds:
+            if microseconds := rest.microseconds:
                 return ("UTC{}{:02d}:{:02d}:{:02d}.{:06d}").format(
                     sign, hours, minutes, seconds, microseconds
                 )
@@ -136,11 +131,9 @@ except ImportError:
     timezone.max = timezone._create(timezone._maxoffset)
 
 
-PY2 = sys.version_info[0] == 2
-PY36 = sys.version_info >= (3, 6)
 PY38 = sys.version_info >= (3, 8)
 
-if PY2:
+if PY2 := sys.version_info[0] == 2:
     unicode = unicode
     chr = unichr
     long = long
@@ -150,7 +143,7 @@ else:
     long = int
 
 
-if PY36:
+if PY36 := sys.version_info >= (3, 6):
     OrderedDict = dict
 else:
     from collections import OrderedDict

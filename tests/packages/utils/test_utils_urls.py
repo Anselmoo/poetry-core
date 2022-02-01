@@ -42,11 +42,7 @@ def test_path_to_url_win():
     ],
 )
 def test_url_to_path(url: str, win_expected: str, non_win_expected: Optional[str]):
-    if sys.platform == "win32":
-        expected_path = win_expected
-    else:
-        expected_path = non_win_expected
-
+    expected_path = win_expected if sys.platform == "win32" else non_win_expected
     if expected_path is None:
         with pytest.raises(ValueError):
             url_to_path(url)

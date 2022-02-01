@@ -146,8 +146,7 @@ class Reconstructor:
         res = self.write_tokens.transform(unreduced_tree)
         for item in res:
             if isinstance(item, Tree):
-                for x in self._reconstruct(item):
-                    yield x
+                yield from self._reconstruct(item)
             else:
                 yield item
 

@@ -52,10 +52,12 @@ class UnexpectedInput(LarkError):
                             if ut.token == self.token:  # Try exact match first
                                 return label
 
-                            if token_type_match_fallback:
-                                # Fallback to token types match
-                                if (ut.token.type == self.token.type) and not candidate[-1]:
-                                    candidate = label, True
+                            if (
+                                token_type_match_fallback
+                                and (ut.token.type == self.token.type)
+                                and not candidate[-1]
+                            ):
+                                candidate = label, True
 
                         except AttributeError:
                             pass

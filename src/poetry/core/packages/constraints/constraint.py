@@ -75,10 +75,7 @@ class Constraint(BaseConstraint):
     def difference(
         self, other: "BaseConstraint"
     ) -> Union["Constraint", "EmptyConstraint"]:
-        if other.allows(self):
-            return EmptyConstraint()
-
-        return self
+        return EmptyConstraint() if other.allows(self) else self
 
     def intersect(self, other: "BaseConstraint") -> "BaseConstraint":
         from poetry.core.packages.constraints.multi_constraint import MultiConstraint

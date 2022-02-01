@@ -12,10 +12,9 @@ def dependencies_draft3(validator, dependencies, instance, schema):
             continue
 
         if validator.is_type(dependency, "object"):
-            for error in validator.descend(
+            yield from validator.descend(
                 instance, dependency, schema_path=property,
-            ):
-                yield error
+            )
         elif validator.is_type(dependency, "string"):
             if dependency not in instance:
                 yield ValidationError(
@@ -38,12 +37,10 @@ def disallow_draft3(validator, disallow, instance, schema):
 
 def extends_draft3(validator, extends, instance, schema):
     if validator.is_type(extends, "object"):
-        for error in validator.descend(instance, extends):
-            yield error
+        yield from validator.descend(instance, extends)
         return
     for index, subschema in enumerate(extends):
-        for error in validator.descend(instance, subschema, schema_path=index):
-            yield error
+        yield from validator.descend(instance, subschema, schema_path=index)
 
 
 def items_draft3_draft4(validator, items, instance, schema):
@@ -52,14 +49,12 @@ def items_draft3_draft4(validator, items, instance, schema):
 
     if validator.is_type(items, "object"):
         for index, item in enumerate(instance):
-            for error in validator.descend(item, items, path=index):
-                yield error
+            yield from validator.descend(item, items, path=index)
     else:
         for (index, item), subschema in zip(enumerate(instance), items):
-            for error in validator.descend(
+            yield from validator.descend(
                 item, subschema, path=index, schema_path=index,
-            ):
-                yield error
+            )
 
 
 def minimum_draft3_draft4(validator, minimum, instance, schema):
@@ -102,13 +97,12 @@ def properties_draft3(validator, properties, instance, schema):
 
     for property, subschema in iteritems(properties):
         if property in instance:
-            for error in validator.descend(
+            yield from validator.descend(
                 instance[property],
                 subschema,
                 path=property,
                 schema_path=property,
-            ):
-                yield error
+            )
         elif subschema.get("required", False):
             error = ValidationError("%r is a required property" % property)
             error._set(
@@ -132,10 +126,8 @@ def type_draft3(validator, types, instance, schema):
             if not errors:
                 return
             all_errors.extend(errors)
-        else:
-            if validator.is_type(instance, type):
-                return
-    else:
-        yield ValidationError(
-            _utils.types_msg(instance, types), context=all_errors,
-        )
+        elif validator.is_type(instance, type):
+            return
+    yield ValidationError(
+        _utils.types_msg(instance, types), context=all_errors,
+    )

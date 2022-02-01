@@ -129,12 +129,11 @@ def matches_re(regex, flags=0, func=None):
         match_func = pattern.match
     elif func is re.search:
         match_func = pattern.search
+    elif fullmatch:
+        match_func = pattern.fullmatch
     else:
-        if fullmatch:
-            match_func = pattern.fullmatch
-        else:
-            pattern = re.compile(r"(?:{})\Z".format(regex), flags)
-            match_func = pattern.match
+        pattern = re.compile(r"(?:{})\Z".format(regex), flags)
+        match_func = pattern.match
 
     return _MatchesReValidator(pattern, flags, match_func)
 

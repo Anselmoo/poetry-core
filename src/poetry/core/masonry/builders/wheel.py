@@ -102,19 +102,18 @@ class WheelBuilder(Builder):
         os.chmod(temp_path, new_mode)
 
         with os.fdopen(fd, "w+b") as fd_file, zipfile.ZipFile(
-            fd_file, mode="w", compression=zipfile.ZIP_DEFLATED
-        ) as zip_file:
-            if not self._editable:
-                if not self._poetry.package.build_should_generate_setup():
-                    self._build(zip_file)
-                    self._copy_module(zip_file)
-                else:
-                    self._copy_module(zip_file)
-                    self._build(zip_file)
-            else:
+                fd_file, mode="w", compression=zipfile.ZIP_DEFLATED
+            ) as zip_file:
+            if self._editable:
                 self._build(zip_file)
                 self._add_pth(zip_file)
 
+            elif not self._poetry.package.build_should_generate_setup():
+                self._build(zip_file)
+                self._copy_module(zip_file)
+            else:
+                self._copy_module(zip_file)
+                self._build(zip_file)
             self._copy_file_scripts(zip_file)
             self._write_metadata(zip_file)
             self._write_record(zip_file)
@@ -127,68 +126,66 @@ class WheelBuilder(Builder):
         logger.info(f"Built {self.wheel_filename}")
 
     def _add_pth(self, wheel: zipfile.ZipFile) -> None:
-        paths = set()
-        for include in self._module.includes:
-            if isinstance(include, PackageInclude) and (
-                include.is_module() or include.is_package()
-            ):
-                paths.add(include.base.resolve().as_posix())
+        paths = {
+            include.base.resolve().as_posix()
+            for include in self._module.includes
+            if isinstance(include, PackageInclude)
+            and (include.is_module() or include.is_package())
+        }
 
-        content = ""
-        for path in paths:
-            content += path + os.linesep
-
+        content = "".join(path + os.linesep for path in paths)
         pth_file = Path(self._module.name).with_suffix(".pth")
 
         with self._write_to_zip(wheel, str(pth_file)) as f:
             f.write(content)
 
     def _build(self, wheel: zipfile.ZipFile) -> None:
-        if self._package.build_script:
-            if not self._poetry.package.build_should_generate_setup():
-                # Since we have a build script but no setup.py generation is required,
-                # we assume that the build script will build and copy the files
-                # directly.
-                # That way they will be picked up when adding files to the wheel.
+        if not self._package.build_script:
+            return
+        if not self._poetry.package.build_should_generate_setup():
+            # Since we have a build script but no setup.py generation is required,
+            # we assume that the build script will build and copy the files
+            # directly.
+            # That way they will be picked up when adding files to the wheel.
+            current_path = os.getcwd()
+            try:
+                os.chdir(str(self._path))
+                self._run_build_script(self._package.build_script)
+            finally:
+                os.chdir(current_path)
+        else:
+            with SdistBuilder(poetry=self._poetry).setup_py() as setup:
+                # We need to place ourselves in the temporary
+                # directory in order to build the package
                 current_path = os.getcwd()
                 try:
                     os.chdir(str(self._path))
-                    self._run_build_script(self._package.build_script)
+                    self._run_build_command(setup)
                 finally:
                     os.chdir(current_path)
-            else:
-                with SdistBuilder(poetry=self._poetry).setup_py() as setup:
-                    # We need to place ourselves in the temporary
-                    # directory in order to build the package
-                    current_path = os.getcwd()
-                    try:
-                        os.chdir(str(self._path))
-                        self._run_build_command(setup)
-                    finally:
-                        os.chdir(current_path)
 
-                    build_dir = self._path / "build"
-                    lib = list(build_dir.glob("lib.*"))
-                    if not lib:
-                        # The result of building the extensions
-                        # does not exist, this may due to conditional
-                        # builds, so we assume that it's okay
-                        return
+                build_dir = self._path / "build"
+                lib = list(build_dir.glob("lib.*"))
+                if not lib:
+                    # The result of building the extensions
+                    # does not exist, this may due to conditional
+                    # builds, so we assume that it's okay
+                    return
 
-                    lib = lib[0]
+                lib = lib[0]
 
-                    for pkg in lib.glob("**/*"):
-                        if pkg.is_dir() or self.is_excluded(pkg):
-                            continue
+                for pkg in lib.glob("**/*"):
+                    if pkg.is_dir() or self.is_excluded(pkg):
+                        continue
 
-                        rel_path = str(pkg.relative_to(lib))
+                    rel_path = str(pkg.relative_to(lib))
 
-                        if rel_path in wheel.namelist():
-                            continue
+                    if rel_path in wheel.namelist():
+                        continue
 
-                        logger.debug(f"Adding: {rel_path}")
+                    logger.debug(f"Adding: {rel_path}")
 
-                        self._add_file(wheel, pkg, rel_path)
+                    self._add_file(wheel, pkg, rel_path)
 
     def _copy_file_scripts(self, wheel: zipfile.ZipFile) -> None:
         file_scripts = self.convert_script_files()
@@ -302,11 +299,7 @@ class WheelBuilder(Builder):
             tag = (tag.interpreter, tag.abi, tag.platform)
         else:
             platform = "any"
-            if self.supports_python2():
-                impl = "py2.py3"
-            else:
-                impl = "py3"
-
+            impl = "py2.py3" if self.supports_python2() else "py3"
             tag = (impl, "none", platform)
 
         return "-".join(tag)

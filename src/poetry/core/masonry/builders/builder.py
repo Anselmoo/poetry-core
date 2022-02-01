@@ -105,11 +105,7 @@ class Builder:
 
             # Checking VCS
             vcs = get_vcs(self._path)
-            if not vcs:
-                vcs_ignored_files = set()
-            else:
-                vcs_ignored_files = set(vcs.get_ignored_files())
-
+            vcs_ignored_files = set() if not vcs else set(vcs.get_ignored_files())
             explicitely_excluded = set()
             for excluded_glob in self._package.exclude:
                 for excluded in self._path.glob(str(excluded_glob)):
@@ -129,10 +125,7 @@ class Builder:
                     )
 
             ignored = (vcs_ignored_files | explicitely_excluded) - explicitely_included
-            result = set()
-            for file in ignored:
-                result.add(file)
-
+            result = {file for file in ignored}
             # The list of excluded files might be big and we will do a lot
             # containment check (x in excluded).
             # Returning a set make those tests much much faster.
@@ -210,7 +203,7 @@ class Builder:
                     # Skip duplicates
                     continue
 
-                logger.debug(f"Adding: {str(file)}")
+                logger.debug(f'Adding: {file}')
                 to_add.add(include_file)
 
         # add build script if it is specified and explicitly required
@@ -243,16 +236,16 @@ class Builder:
             content += f"Keywords: {self._meta.keywords}\n"
 
         if self._meta.author:
-            content += f"Author: {str(self._meta.author)}\n"
+            content += f'Author: {self._meta.author}\n'
 
         if self._meta.author_email:
-            content += f"Author-email: {str(self._meta.author_email)}\n"
+            content += f'Author-email: {self._meta.author_email}\n'
 
         if self._meta.maintainer:
-            content += f"Maintainer: {str(self._meta.maintainer)}\n"
+            content += f'Maintainer: {self._meta.maintainer}\n'
 
         if self._meta.maintainer_email:
-            content += f"Maintainer-email: {str(self._meta.maintainer_email)}\n"
+            content += f'Maintainer-email: {self._meta.maintainer_email}\n'
 
         if self._meta.requires_python:
             content += f"Requires-Python: {self._meta.requires_python}\n"
@@ -267,7 +260,7 @@ class Builder:
             content += f"Requires-Dist: {dep}\n"
 
         for url in sorted(self._meta.project_urls, key=lambda u: u[0]):
-            content += f"Project-URL: {str(url)}\n"
+            content += f'Project-URL: {url}\n'
 
         if self._meta.description_content_type:
             content += (
@@ -304,9 +297,7 @@ class Builder:
 
             extras = specification.get("extras", [])
             extras = f"[{', '.join(extras)}]" if extras else ""
-            reference = specification.get("reference")
-
-            if reference:
+            if reference := specification.get("reference"):
                 result["console_scripts"].append(f"{name} = {reference}{extras}")
 
         # Plugins -> entry points

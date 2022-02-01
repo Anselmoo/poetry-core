@@ -158,11 +158,9 @@ class _IndividualSpecifier(BaseSpecifier):
         return self._spec != other._spec
 
     def _get_operator(self, op):
-        # type: (str) -> CallableOperator
-        operator_callable = getattr(
+        return getattr(
             self, "_compare_{0}".format(self._operators[op])
-        )  # type: CallableOperator
-        return operator_callable
+        )
 
     def _coerce_version(self, version):
         # type: (UnparsedVersion) -> ParsedVersion
@@ -247,8 +245,7 @@ class _IndividualSpecifier(BaseSpecifier):
         # any values, and if we have not and we have any prereleases stored up
         # then we will go ahead and yield the prereleases.
         if not yielded and found_prereleases:
-            for version in found_prereleases:
-                yield version
+            yield from found_prereleases
 
 
 class LegacySpecifier(_IndividualSpecifier):
@@ -550,9 +547,12 @@ class Specifier(_IndividualSpecifier):
         # includes is a pre-release version, that we do not accept pre-release
         # versions for the version mentioned in the specifier (e.g. <3.1 should
         # not match 3.1.dev0, but should match 3.0.dev0).
-        if not spec.is_prerelease and prospective.is_prerelease:
-            if Version(prospective.base_version) == Version(spec.base_version):
-                return False
+        if (
+            not spec.is_prerelease
+            and prospective.is_prerelease
+            and Version(prospective.base_version) == Version(spec.base_version)
+        ):
+            return False
 
         # If we've gotten to here, it means that prospective version is both
         # less than the spec version *and* it's not a pre-release of the same
@@ -577,15 +577,19 @@ class Specifier(_IndividualSpecifier):
         # includes is a post-release version, that we do not accept
         # post-release versions for the version mentioned in the specifier
         # (e.g. >3.1 should not match 3.0.post0, but should match 3.2.post0).
-        if not spec.is_postrelease and prospective.is_postrelease:
-            if Version(prospective.base_version) == Version(spec.base_version):
-                return False
+        if (
+            not spec.is_postrelease
+            and prospective.is_postrelease
+            and Version(prospective.base_version) == Version(spec.base_version)
+        ):
+            return False
 
         # Ensure that we do not allow a local version of the version mentioned
         # in the specifier, which is technically greater than, to match.
-        if prospective.local is not None:
-            if Version(prospective.base_version) == Version(spec.base_version):
-                return False
+        if prospective.local is not None and Version(
+            prospective.base_version
+        ) == Version(spec.base_version):
+            return False
 
         # If we've gotten to here, it means that prospective version is both
         # greater than the spec version *and* it's not a pre-release of the
@@ -635,8 +639,7 @@ def _version_split(version):
     # type: (str) -> List[str]
     result = []  # type: List[str]
     for item in version.split("."):
-        match = _prefix_regex.search(item)
-        if match:
+        if match := _prefix_regex.search(item):
             result.extend(match.groups())
         else:
             result.append(item)

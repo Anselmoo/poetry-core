@@ -154,9 +154,6 @@ class SdistBuilder(Builder):
 
                     if module not in modules:
                         modules.append(module)
-            else:
-                pass
-
         if package_dir:
             before.append(f"package_dir = \\\n{pformat(package_dir)}\n")
             extra.append("'package_dir': package_dir,")
@@ -184,13 +181,11 @@ class SdistBuilder(Builder):
             before.append(f"extras_require = \\\n{pformat(extras)}\n")
             extra.append("'extras_require': extras_require,")
 
-        entry_points = self.convert_entry_points()
-        if entry_points:
+        if entry_points := self.convert_entry_points():
             before.append(f"entry_points = \\\n{pformat(entry_points)}\n")
             extra.append("'entry_points': entry_points,")
 
-        script_files = self.convert_script_files()
-        if script_files:
+        if script_files := self.convert_script_files():
             rel_paths = [str(p.relative_to(self._path)) for p in script_files]
             before.append(f"scripts = \\\n{pformat(rel_paths)}\n")
             extra.append("'scripts': scripts,")

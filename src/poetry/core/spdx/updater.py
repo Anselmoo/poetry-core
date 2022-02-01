@@ -26,15 +26,11 @@ class Updater:
             )
 
     def get_licenses(self, url: str) -> Dict[str, Any]:
-        licenses = {}
         with urlopen(url) as r:
             data = json.loads(r.read().decode())
 
-        for info in data["licenses"]:
-            licenses[info["licenseId"]] = [
+        return {info["licenseId"]: [
                 info["name"],
                 info["isOsiApproved"],
                 info["isDeprecatedLicenseId"],
-            ]
-
-        return licenses
+            ] for info in data["licenses"]}

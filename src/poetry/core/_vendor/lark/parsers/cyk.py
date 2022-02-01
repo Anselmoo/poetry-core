@@ -29,7 +29,7 @@ class Rule(object):
     def __init__(self, lhs, rhs, weight, alias):
         super(Rule, self).__init__()
         assert isinstance(lhs, NT), lhs
-        assert all(isinstance(x, NT) or isinstance(x, T) for x in rhs), rhs
+        assert all(isinstance(x, (NT, T)) for x in rhs), rhs
         self.lhs = lhs
         self.rhs = rhs
         self.weight = weight
@@ -95,9 +95,11 @@ class Parser(object):
         assert isinstance(lark_rule.origin, NT)
         assert all(isinstance(x, Symbol) for x in lark_rule.expansion)
         return Rule(
-            lark_rule.origin, lark_rule.expansion,
-            weight=lark_rule.options.priority if lark_rule.options.priority else 0,
-            alias=lark_rule)
+            lark_rule.origin,
+            lark_rule.expansion,
+            weight=lark_rule.options.priority or 0,
+            alias=lark_rule,
+        )
 
     def parse(self, tokenized, start):  # pylint: disable=invalid-name
         """Parses input, which is a list of tokens."""
@@ -311,35 +313,32 @@ def to_cnf(g):
 def unroll_unit_skiprule(lhs, orig_rhs, skipped_rules, children, weight, alias):
     if not skipped_rules:
         return RuleNode(Rule(lhs, orig_rhs, weight=weight, alias=alias), children, weight=weight)
-    else:
-        weight = weight - skipped_rules[0].weight
-        return RuleNode(
-            Rule(lhs, [skipped_rules[0].lhs], weight=weight, alias=alias), [
-                unroll_unit_skiprule(skipped_rules[0].lhs, orig_rhs,
-                                skipped_rules[1:], children,
-                                skipped_rules[0].weight, skipped_rules[0].alias)
-            ], weight=weight)
+    weight = weight - skipped_rules[0].weight
+    return RuleNode(
+        Rule(lhs, [skipped_rules[0].lhs], weight=weight, alias=alias), [
+            unroll_unit_skiprule(skipped_rules[0].lhs, orig_rhs,
+                            skipped_rules[1:], children,
+                            skipped_rules[0].weight, skipped_rules[0].alias)
+        ], weight=weight)
 
 
 def revert_cnf(node):
     """Reverts a parse tree (RuleNode) to its original non-CNF form (Node)."""
     if isinstance(node, T):
         return node
-    # Reverts TERM rule.
     if node.rule.lhs.name.startswith('__T_'):
         return node.children[0]
-    else:
-        children = []
-        for child in map(revert_cnf, node.children):
-            # Reverts BIN rule.
-            if isinstance(child, RuleNode) and child.rule.lhs.name.startswith('__SP_'):
-                children += child.children
-            else:
-                children.append(child)
-        # Reverts UNIT rule.
-        if isinstance(node.rule, UnitSkipRule):
-            return unroll_unit_skiprule(node.rule.lhs, node.rule.rhs,
-                                    node.rule.skipped_rules, children,
-                                    node.rule.weight, node.rule.alias)
+    children = []
+    for child in map(revert_cnf, node.children):
+        # Reverts BIN rule.
+        if isinstance(child, RuleNode) and child.rule.lhs.name.startswith('__SP_'):
+            children += child.children
         else:
-            return RuleNode(node.rule, children)
+            children.append(child)
+    # Reverts UNIT rule.
+    if isinstance(node.rule, UnitSkipRule):
+        return unroll_unit_skiprule(node.rule.lhs, node.rule.rhs,
+                                node.rule.skipped_rules, children,
+                                node.rule.weight, node.rule.alias)
+    else:
+        return RuleNode(node.rule, children)

@@ -29,7 +29,7 @@ def freeze(o):
     """
     typ = type(o)
     if typ is dict:
-        return pmap(dict((k, freeze(v)) for k, v in six.iteritems(o)))
+        return pmap({k: freeze(v) for k, v in six.iteritems(o)})
     if typ is list:
         return pvector(map(freeze, o))
     if typ is tuple:
@@ -59,7 +59,7 @@ def thaw(o):
     if isinstance(o, PVector):
         return list(map(thaw, o))
     if isinstance(o, PMap):
-        return dict((k, thaw(v)) for k, v in o.iteritems())
+        return {k: thaw(v) for k, v in o.iteritems()}
     if isinstance(o, PSet):
         return set(o)
     if type(o) is tuple:

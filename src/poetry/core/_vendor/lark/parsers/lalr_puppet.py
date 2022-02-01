@@ -29,8 +29,7 @@ class ParserPuppet:
 
         while action is Reduce:
             rule = arg
-            size = len(rule.expansion)
-            if size:
+            if size := len(rule.expansion):
                 s = value_stack[-size:]
                 del state_stack[-size:]
                 del value_stack[-size:]

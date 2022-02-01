@@ -210,7 +210,8 @@ class Key:
     ):  # type: (str, Optional[KeyType], Optional[str], bool, Optional[str]) -> None
         if t is None:
             if any(
-                [c not in string.ascii_letters + string.digits + "-" + "_" for c in k]
+                c not in string.ascii_letters + string.digits + "-" + "_"
+                for c in k
             ):
                 t = KeyType.Basic
             else:
@@ -246,10 +247,7 @@ class Key:
         return hash(self.key)
 
     def __eq__(self, other):  # type: (Key) -> bool
-        if isinstance(other, Key):
-            return self.key == other.key
-
-        return self.key == other
+        return self.key == other.key if isinstance(other, Key) else self.key == other
 
     def __str__(self):  # type: () -> str
         return self.as_string()
@@ -911,7 +909,7 @@ class Table(Item, dict):
 
         return self.append(key, item)
 
-    def append(self, key, _item):  # type: (Union[Key, str], Any) -> Table
+    def append(self, key, _item):    # type: (Union[Key, str], Any) -> Table
         """
         Appends a (key, item) to the table.
         """
@@ -934,11 +932,7 @@ class Table(Item, dict):
 
         if not isinstance(_item, Whitespace):
             m = re.match("(?s)^([^ ]*)(.*)$", _item.trivia.indent)
-            if not m:
-                _item.trivia.indent = indent
-            else:
-                _item.trivia.indent = m.group(1) + indent + m.group(2)
-
+            _item.trivia.indent = indent if not m else m.group(1) + indent + m.group(2)
         return self
 
     def raw_append(self, key, _item):  # type: (Union[Key, str], Any) -> Table
@@ -981,11 +975,7 @@ class Table(Item, dict):
         super(Table, self).indent(indent)
 
         m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
-        if not m:
-            indent = ""
-        else:
-            indent = m.group(1)
-
+        indent = "" if not m else m.group(1)
         for k, item in self._value.body:
             if not isinstance(item, Whitespace):
                 item.trivia.indent = indent + item.trivia.indent
@@ -993,16 +983,13 @@ class Table(Item, dict):
         return self
 
     def keys(self):  # type: () -> Generator[str]
-        for k in self._value.keys():
-            yield k
+        yield from self._value.keys()
 
     def values(self):  # type: () -> Generator[Item]
-        for v in self._value.values():
-            yield v
+        yield from self._value.values()
 
     def items(self):  # type: () -> Generator[Item]
-        for k, v in self._value.items():
-            yield k, v
+        yield from self._value.items()
 
     def update(self, other):  # type: (Dict) -> None
         for k, v in other.items():
@@ -1034,10 +1021,7 @@ class Table(Item, dict):
 
         if not isinstance(value, Whitespace):
             m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
-            if not m:
-                value.trivia.indent = indent
-            else:
-                value.trivia.indent = m.group(1) + indent + m.group(2)
+            value.trivia.indent = indent if not m else m.group(1) + indent + m.group(2)
 
     def __delitem__(self, key):  # type: (Union[Key, str]) -> None
         self.remove(key)
@@ -1123,11 +1107,7 @@ class InlineTable(Item, dict):
         for i, (k, v) in enumerate(self._value.body):
             if k is None:
                 if i == len(self._value.body) - 1:
-                    if self._new:
-                        buf = buf.rstrip(", ")
-                    else:
-                        buf = buf.rstrip(",")
-
+                    buf = buf.rstrip(", ") if self._new else buf.rstrip(",")
                 buf += v.as_string()
 
                 continue
@@ -1151,16 +1131,13 @@ class InlineTable(Item, dict):
         return buf
 
     def keys(self):  # type: () -> Generator[str]
-        for k in self._value.keys():
-            yield k
+        yield from self._value.keys()
 
     def values(self):  # type: () -> Generator[Item]
-        for v in self._value.values():
-            yield v
+        yield from self._value.values()
 
     def items(self):  # type: () -> Generator[Item]
-        for k, v in self._value.items():
-            yield k, v
+        yield from self._value.items()
 
     def update(self, other):  # type: (Dict) -> None
         for k, v in other.items():
@@ -1194,10 +1171,7 @@ class InlineTable(Item, dict):
 
         if not isinstance(value, Whitespace):
             m = re.match("(?s)^([^ ]*)(.*)$", value.trivia.indent)
-            if not m:
-                value.trivia.indent = indent
-            else:
-                value.trivia.indent = m.group(1) + indent + m.group(2)
+            value.trivia.indent = indent if not m else m.group(1) + indent + m.group(2)
 
     def __delitem__(self, key):  # type: (Union[Key, str]) -> None
         self.remove(key)
@@ -1283,16 +1257,11 @@ class AoT(Item, list):
         return [v.value for v in self._body]
 
     def append(self, table):  # type: (Table) -> Table
-        m = re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent)
-        if m:
+        if m := re.match("(?s)^[^ ]*([ ]+).*$", self._trivia.indent):
             indent = m.group(1)
 
             m = re.match("(?s)^([^ ]*)(.*)$", table.trivia.indent)
-            if not m:
-                table.trivia.indent = indent
-            else:
-                table.trivia.indent = m.group(1) + indent + m.group(2)
-
+            table.trivia.indent = indent if not m else m.group(1) + indent + m.group(2)
         if not self._parsed and "\n" not in table.trivia.indent and self._body:
             table.trivia.indent = "\n" + table.trivia.indent
 
@@ -1303,11 +1272,7 @@ class AoT(Item, list):
         return table
 
     def as_string(self):  # type: () -> str
-        b = ""
-        for table in self._body:
-            b += table.as_string()
-
-        return b
+        return "".join(table.as_string() for table in self._body)
 
     def __repr__(self):  # type: () -> str
         return "<AoT {}>".format(self.value)

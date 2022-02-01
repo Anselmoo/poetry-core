@@ -211,11 +211,9 @@ class ForestVisitor(object):
                 else:                                  vsno(current)
                 input_stack.pop()
                 visiting.remove(current_id)
-                continue
             else:
                 visiting.add(current_id)
-                if isinstance(current, PackedNode): next_node = vpni(current)
-                else:                               next_node = vsni(current)
+                next_node = vpni(current) if isinstance(current, PackedNode) else vsni(current)
                 if next_node is None:
                     continue
 
@@ -223,8 +221,7 @@ class ForestVisitor(object):
                     raise ParseError("Infinite recursion in grammar!")
 
                 input_stack.append(next_node)
-                continue
-
+            continue
         return self.result
 
 class ForestSumVisitor(ForestVisitor):
@@ -413,10 +410,7 @@ class ForestToPyDotVisitor(ForestVisitor):
         graph_node_label = repr(node)
         graph_node_color = 0x808080
         graph_node_style = "\"filled\""
-        if node.is_intermediate:
-            graph_node_shape = "ellipse"
-        else:
-            graph_node_shape = "rectangle"
+        graph_node_shape = "ellipse" if node.is_intermediate else "rectangle"
         graph_node = self.pydot.Node(graph_node_id, style=graph_node_style, fillcolor="#{:06x}".format(graph_node_color), shape=graph_node_shape, label=graph_node_label)
         self.graph.add_node(graph_node)
         return iter(node.children)

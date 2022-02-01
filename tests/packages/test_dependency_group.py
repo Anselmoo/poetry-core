@@ -21,4 +21,4 @@ def test_dependency_group_remove_dependency():
     assert {dependency.name for dependency in group.dependencies} == {"flake8"}
 
     group.remove_dependency("flake8")
-    assert {dependency.name for dependency in group.dependencies} == set()
+    assert not {dependency.name for dependency in group.dependencies}

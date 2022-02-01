@@ -20,10 +20,9 @@ def patternProperties(validator, patternProperties, instance, schema):
     for pattern, subschema in iteritems(patternProperties):
         for k, v in iteritems(instance):
             if re.search(pattern, k):
-                for error in validator.descend(
+                yield from validator.descend(
                     v, subschema, path=k, schema_path=pattern,
-                ):
-                    yield error
+                )
 
 
 def propertyNames(validator, propertyNames, instance, schema):
@@ -31,11 +30,10 @@ def propertyNames(validator, propertyNames, instance, schema):
         return
 
     for property in instance:
-        for error in validator.descend(
+        yield from validator.descend(
             instance=property,
             schema=propertyNames,
-        ):
-            yield error
+        )
 
 
 def additionalProperties(validator, aP, instance, schema):
@@ -46,15 +44,11 @@ def additionalProperties(validator, aP, instance, schema):
 
     if validator.is_type(aP, "object"):
         for extra in extras:
-            for error in validator.descend(instance[extra], aP, path=extra):
-                yield error
+            yield from validator.descend(instance[extra], aP, path=extra)
     elif not aP and extras:
         if "patternProperties" in schema:
             patterns = sorted(schema["patternProperties"])
-            if len(extras) == 1:
-                verb = "does"
-            else:
-                verb = "do"
+            verb = "does" if len(extras) == 1 else "do"
             error = "%s %s not match any of the regexes: %s" % (
                 ", ".join(map(repr, sorted(extras))),
                 verb,
@@ -72,14 +66,12 @@ def items(validator, items, instance, schema):
 
     if validator.is_type(items, "array"):
         for (index, item), subschema in zip(enumerate(instance), items):
-            for error in validator.descend(
+            yield from validator.descend(
                 item, subschema, path=index, schema_path=index,
-            ):
-                yield error
+            )
     else:
         for index, item in enumerate(instance):
-            for error in validator.descend(item, items, path=index):
-                yield error
+            yield from validator.descend(item, items, path=index)
 
 
 def additionalItems(validator, aI, instance, schema):
@@ -92,8 +84,7 @@ def additionalItems(validator, aI, instance, schema):
     len_items = len(schema.get("items", []))
     if validator.is_type(aI, "object"):
         for index, item in enumerate(instance[len_items:], start=len_items):
-            for error in validator.descend(item, aI, path=index):
-                yield error
+            yield from validator.descend(item, aI, path=index)
     elif not aI and len(instance) > len(schema.get("items", [])):
         error = "Additional items are not allowed (%s %s unexpected)"
         yield ValidationError(
@@ -234,14 +225,13 @@ def dependencies(validator, dependencies, instance, schema):
                     message = "%r is a dependency of %r"
                     yield ValidationError(message % (each, property))
         else:
-            for error in validator.descend(
+            yield from validator.descend(
                 instance, dependency, schema_path=property,
-            ):
-                yield error
+            )
 
 
 def enum(validator, enums, instance, schema):
-    if instance == 0 or instance == 1:
+    if instance in [0, 1]:
         unbooled = unbool(instance)
         if all(unbooled != unbool(each) for each in enums):
             yield ValidationError("%r is not one of %r" % (instance, enums))
@@ -253,15 +243,13 @@ def ref(validator, ref, instance, schema):
     resolve = getattr(validator.resolver, "resolve", None)
     if resolve is None:
         with validator.resolver.resolving(ref) as resolved:
-            for error in validator.descend(instance, resolved):
-                yield error
+            yield from validator.descend(instance, resolved)
     else:
         scope, resolved = validator.resolver.resolve(ref)
         validator.resolver.push_scope(scope)
 
         try:
-            for error in validator.descend(instance, resolved):
-                yield error
+            yield from validator.descend(instance, resolved)
         finally:
             validator.resolver.pop_scope()
 
@@ -279,13 +267,12 @@ def properties(validator, properties, instance, schema):
 
     for property, subschema in iteritems(properties):
         if property in instance:
-            for error in validator.descend(
+            yield from validator.descend(
                 instance[property],
                 subschema,
                 path=property,
                 schema_path=property,
-            ):
-                yield error
+            )
 
 
 def required(validator, required, instance, schema):
@@ -312,8 +299,7 @@ def maxProperties(validator, mP, instance, schema):
 
 def allOf(validator, allOf, instance, schema):
     for index, subschema in enumerate(allOf):
-        for error in validator.descend(instance, subschema, schema_path=index):
-            yield error
+        yield from validator.descend(instance, subschema, schema_path=index)
 
 
 def anyOf(validator, anyOf, instance, schema):
@@ -345,8 +331,9 @@ def oneOf(validator, oneOf, instance, schema):
             context=all_errors,
         )
 
-    more_valid = [s for i, s in subschemas if validator.is_valid(instance, s)]
-    if more_valid:
+    if more_valid := [
+        s for i, s in subschemas if validator.is_valid(instance, s)
+    ]:
         more_valid.append(first_valid)
         reprs = ", ".join(repr(schema) for schema in more_valid)
         yield ValidationError(
@@ -365,9 +352,7 @@ def if_(validator, if_schema, instance, schema):
     if validator.is_valid(instance, if_schema):
         if u"then" in schema:
             then = schema[u"then"]
-            for error in validator.descend(instance, then, schema_path="then"):
-                yield error
+            yield from validator.descend(instance, then, schema_path="then")
     elif u"else" in schema:
         else_ = schema[u"else"]
-        for error in validator.descend(instance, else_, schema_path="else"):
-            yield error
+        yield from validator.descend(instance, else_, schema_path="else")

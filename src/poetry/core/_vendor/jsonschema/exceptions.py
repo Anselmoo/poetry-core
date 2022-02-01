@@ -128,7 +128,7 @@ class _Error(Exception):
             "message", "cause", "context", "validator", "validator_value",
             "path", "schema_path", "instance", "schema", "parent",
         )
-        return dict((attr, getattr(self, attr)) for attr in attrs)
+        return {attr: getattr(self, attr) for attr in attrs}
 
 
 class ValidationError(_Error):

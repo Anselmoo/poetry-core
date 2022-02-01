@@ -27,10 +27,7 @@ class EmptyConstraint(BaseConstraint):
         return self
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, BaseConstraint):
-            return False
-
-        return other.is_empty()
+        return False if not isinstance(other, BaseConstraint) else other.is_empty()
 
     def __str__(self) -> str:
         return ""

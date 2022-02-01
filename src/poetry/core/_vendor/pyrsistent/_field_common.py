@@ -20,7 +20,10 @@ PY2 = sys.version_info[0] < 3
 
 
 def set_fields(dct, bases, name):
-    dct[name] = dict(sum([list(b.__dict__.get(name, {}).items()) for b in bases], []))
+    dct[name] = dict(
+        sum((list(b.__dict__.get(name, {}).items()) for b in bases), [])
+    )
+
 
     for k, v in list(dct.items()):
         if isinstance(v, _PField):
@@ -29,9 +32,13 @@ def set_fields(dct, bases, name):
 
 
 def check_global_invariants(subject, invariants):
-    error_codes = tuple(error_code for is_ok, error_code in
-                        (invariant(subject) for invariant in invariants) if not is_ok)
-    if error_codes:
+    if error_codes := tuple(
+        error_code
+        for is_ok, error_code in (
+            invariant(subject) for invariant in invariants
+        )
+        if not is_ok
+    ):
         raise InvariantException(error_codes, (), 'Global invariant failed')
 
 
@@ -53,7 +60,7 @@ def is_type_cls(type_cls, field_type):
     if type(field_type) is set:
         return True
     types = tuple(field_type)
-    if len(types) == 0:
+    if not types:
         return False
     return issubclass(get_type(types[0]), type_cls)
 
@@ -318,10 +325,7 @@ def pmap_field(key_type, value_type, optional=False, invariant=PFIELD_NO_INVARIA
 
     if optional:
         def factory(argument):
-            if argument is None:
-                return None
-            else:
-                return TheMap.create(argument)
+            return None if argument is None else TheMap.create(argument)
     else:
         factory = TheMap.create
 

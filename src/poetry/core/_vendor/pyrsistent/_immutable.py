@@ -52,8 +52,7 @@ def immutable(members='', name='Immutable', verbose=False):
         members = members.replace(',', ' ').split()
 
     def frozen_member_test():
-        frozen_members = ["'%s'" % f for f in members if f.endswith('_')]
-        if frozen_members:
+        if frozen_members := ["'%s'" % f for f in members if f.endswith('_')]:
             return """
         frozen_fields = fields_to_modify & set([{frozen_members}])
         if frozen_fields:
